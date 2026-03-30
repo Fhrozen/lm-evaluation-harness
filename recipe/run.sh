@@ -31,20 +31,29 @@ base_tasks+=",truthfulqa_mc2"
 base_tasks+=",boolq,social_iqa,nq_open,longbench,longbench_e"
 
 if [ "$type_model" = "base" ]; then
-    tasks=$base_tasks
+    tasks=${base_tasks}
 elif [ "$type_model" = "instruct" ]; then
     echo "ERROR: Not implemented yet for instruct models. Please implement the tasks for instruct models in the script."
     exit 1
     tasks="${base_tasks},gsm8k,truthfulqa_mc2"
 else
-    echo "Invalid type_model: $type_model. Valid options are: base, instruct."
+    echo "Invalid type_model: ${type_model}. Valid options are: base, instruct."
     exit 1
 fi
 
 # Run the Python script
-accelerate launch -m lm_eval --model hf \
-    --model_args pretrained=${pretrained},dtype="bfloat16",trust_remote_code=True \
-    --tasks ${tasks} \
-    --batch_size auto:8 \
-    --output_path results \
-    --log_samples || exit 1
+accelerate launch \
+    --num_machines 1 \
+    -m lm_eval \
+        --model hf \
+        --model_args pretrained=${pretrained},dtype="bfloat16",trust_remote_code=True \
+        --tasks ${tasks} \
+        --batch_size auto:8 \
+        --output_path results || exit 1
+
+# Process the results
+python ./extract_results.py --results-dir results \
+    --model-id ${pretrained} \
+    --output-file results/summarized_${type_model}_results.md || exit 1
+
+echo "Done"
