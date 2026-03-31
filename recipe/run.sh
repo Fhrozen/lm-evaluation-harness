@@ -52,7 +52,7 @@ accelerate launch \
         --output_path results || exit 1
 
 # Process the results
-python ./extract_results.py --results-dir results \
+python ./local/extract_results.py --results-dir results \
     --model-id ${pretrained} \
     --output-file results/summarized_${type_model}_results.md || exit 1
 
